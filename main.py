@@ -405,3 +405,74 @@ if approach == 'Classification':
     st.write('**Number of data points has been resampled to show an equal number of active and inactive molecules')
 
 
+'''
+    ## **Visualizing** Class Separation Based on Many Features with **Dimensionality Reduction**
+'''
+
+
+@st.cache
+def get_reduced(feats, dimensions, algo):
+    data_for_red = X_usage[feats]
+    if algo == 'PCA':
+        reducer = PCA(random_state=0, n_components=dimensions)
+    if algo == 'LDA':
+        reducer = LinearDiscriminantAnalysis(n_components=dimensions)
+    if algo == 'TSN-e':
+        reducer = TSNE(random_state=0, n_components=dimensions)
+    if algo == 'LDA':
+        return reducer.fit_transform(data_for_red, y_usage)
+    return reducer.fit_transform(data_for_red)
+
+features_for_reduction = st.multiselect(
+    "Choose features", list(X_vals.columns), [], key='pca_selector'
+)
+
+three_d = st.checkbox(label='3D')
+def plot_reduced():
+    algo = st.radio(
+    "Which algorithm do you want to use for dimensionality reduction?",
+    ('PCA', 'LDA', 'TSN-e')
+)
+    if three_d:
+        reduced_features = get_reduced(features_for_reduction, 3, algo).transpose()
+        fig = px.scatter_3d(x=reduced_features[0], y=reduced_features[1], z=reduced_features[2],
+                    color=y_usage)
+        fig.update_traces(marker=dict(
+                              size=5,
+                              line=dict(
+                                  width=2,
+                                  color='DarkSlateGrey'
+                              )
+                          ),
+        )
+    else:
+        reduced_features = get_reduced(features_for_reduction, 2, algo).transpose()
+        fig = px.scatter(x=reduced_features[0], y=reduced_features[1],
+                    color=y_usage)
+        fig.update_traces(marker=dict(
+                              size=8,
+                              opacity=0.8,
+                              line=dict(
+                                  width=2,
+                                  color='DarkSlateGrey'
+                              )
+                          ),
+        )
+
+    st.plotly_chart(fig)
+
+if len(features_for_reduction) < 3:
+    st.error("Please select at least 3 features.")
+
+elif approach == 'Time Series Regression':
+    if ds in features_for_reduction:
+        st.error("Date-type variable cannot be present in PCA transform.")
+    else:
+        plot_reduced()
+else:
+    plot_reduced()
+
+if approach == 'Classification':
+    st.write('**Number of data points has been resampled to show an equal number of active and inactive molecules')
+
+
