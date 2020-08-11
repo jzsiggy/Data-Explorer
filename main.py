@@ -355,3 +355,53 @@ else:
     st.write('This is only available for time series regression tasks.')
 
 
+'''
+    ## **Visualizing** Class Separation Based on 2 or 3 features
+'''
+
+
+px.defaults.color_continuous_scale = px.colors.sequential.Pinkyl
+
+if approach == 'Classification':
+  X_usage, y_usage = RandomUnderSampler(random_state=0).fit_resample(X_vals, y_vals)
+else:
+  X_usage, y_usage = X_vals, y_vals
+
+def plot_classification(feats):
+    if len(feats) == 2:
+        fig = px.scatter(X_usage, x=feats[0], y=feats[1], color=y_usage)
+        fig.update_traces(marker=dict(
+                              size=8,
+                              opacity=0.8,
+                              line=dict(
+                                  width=2,
+                                  color='DarkSlateGrey'
+                              )
+                          ),
+        )
+    if len(feats) == 3:
+        fig = px.scatter_3d(X_usage, x=feats[0], y=feats[1], z=feats[2], color=y_usage)
+        fig.update_traces(marker=dict(
+                              size=5,
+                              line=dict(
+                                  width=2,
+                                  color='DarkSlateGrey'
+                              )
+                          ),
+        )
+    st.plotly_chart(fig)
+
+features_2 = st.multiselect(
+    "Choose 2 or 3 features", list(X_vals.columns), [], key='feat_plot'
+)
+if len(features_2) == 2:
+    plot_classification(features_2)
+elif len(features_2) == 3:
+    plot_classification(features_2)
+else:
+    st.error("Please select between 2 and 3 features.")
+
+if approach == 'Classification':
+    st.write('**Number of data points has been resampled to show an equal number of active and inactive molecules')
+
+
