@@ -476,3 +476,51 @@ if approach == 'Classification':
     st.write('**Number of data points has been resampled to show an equal number of active and inactive molecules')
 
 
+'''
+    ## Understanding **Feature Importances** Through Different Learning Algorithms
+'''
+
+if approach == 'Time Series Regression':
+    X_usage = X_usage.drop(columns=[ds])
+    st.write('The date column has been removed for this analysis.')
+
+
+if approach == 'Classification':
+    algorithm_table = {
+        'Random Forest': RandomForestClassifier(),
+        'Extremely Randomized Trees': ExtraTreesClassifier(),
+        'Decision Tree': DecisionTreeClassifier(),
+        'Logistic Regression': LogisticRegression()
+    }
+else:
+    algorithm_table = {
+        'Random Forest': RandomForestRegressor(),
+        'Extremely Randomized Trees': ExtraTreesRegressor(),
+    }
+
+@st.cache
+def get_importances(clf):
+    model = clf.fit(X_usage, y_usage)
+    try:
+        importances = pd.Series(model.feature_importances_, index=X_usage.columns)
+    except:
+        importances = pd.Series(model.coef_[0], index=X_usage.columns)
+    return importances
+    
+def show_ft_importances():
+    model_for_selection = st.multiselect(
+        "Choose algorithm", list(algorithm_table), ['Random Forest'], key='feat_importances'
+    )
+    if not model_for_selection:
+        st.error("Please select at least one algorithm.")
+
+    for estimator in model_for_selection:
+        feat_importances = get_importances(algorithm_table[estimator])
+        fig = plt.figure(figsize=(8,2.5))
+        fig.add_axes(feat_importances.nlargest(20).plot(kind='bar'))
+        fig.suptitle(estimator + ' Feature Importance', fontsize=16)
+
+        st.write(fig)
+
+show_ft_importances()
+
