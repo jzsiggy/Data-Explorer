@@ -524,3 +524,182 @@ def show_ft_importances():
 
 show_ft_importances()
 
+'''
+    ## **Interactive** Model Builder
+'''
+
+if approach == 'Time Series Regression':
+    st.write('The interactive Model Builder is Still Not Available for Time Series Regression')
+    st.stop()
+
+steps = []
+
+
+if will_scale:
+    st.write("Remember - you have already scaled your data.")
+else:
+    preprocessing_table = {
+        'Standard Scaler': StandardScaler(),
+    }
+
+    preprocessing_steps = st.multiselect(
+        "Choose your preprocessing steps*", list(preprocessing_table), ['Standard Scaler'], key='preprocessing'
+    )
+    if not preprocessing_steps:
+        st.error("Please select at least one preprocessing step.")
+
+    for p in preprocessing_steps:
+        steps.append((p, preprocessing_table[p]))
+
+
+
+feat_sel_table = {
+    'PCA': PCA(),
+    'Anova F Selector': SelectKBest(),
+    'Select from Model': SelectFromModel(estimator=RandomForestClassifier())
+}
+
+feat_sel_steps = st.multiselect(
+    "Choose your feature selection/reduction steps (can be blank)", list(feat_sel_table), ['PCA'], key='feature_selection'
+)
+
+ft_count = X_vals.columns.size
+
+for f in feat_sel_steps:
+    if f == 'PCA':
+        n_components = st.slider('PCA n_components', 2, ft_count)
+        feat_sel_table[f].set_params(n_components=n_components)
+    if f == 'Anova F Selector':
+        n_features = st.slider('ANOVA F num features to keep', 2, ft_count)
+        feat_sel_table[f].set_params(k=n_features)
+    if f == 'Select from Model':
+        n_features = st.slider('Model Selector max num features to keep', 2, ft_count)
+        feat_sel_table[f].set_params(max_features=n_features)
+    steps.append((f, feat_sel_table[f]))
+
+
+
+sampling_table = {
+    'Random Under Sampler': RandomUnderSampler(),
+    'Neighbourhood Cleaning': NeighbourhoodCleaningRule(),
+    'Random Over Sampler': RandomOverSampler(),
+    'SMOTE': SMOTE(),
+    'SVMSMOTE': SVMSMOTE(),
+}
+
+if approach == 'Classification':
+    sampling_steps = st.multiselect(
+        "Choose your Resampler (can be blank)", list(sampling_table), ['Random Under Sampler'], key='sampler'
+    )
+
+    for s in sampling_steps:
+        steps.append((s, sampling_table[s]))
+
+
+
+if approach == 'Classification':
+    classifier_table = {
+        'Random Forest': RandomForestClassifier(random_state=0),
+        'Extremely Randomized Trees': ExtraTreesClassifier(random_state=0),
+        'Decision Tree': DecisionTreeClassifier(random_state=0),
+        'Support Vector Machine': SVC(probability=True, random_state=0),
+        'Logistic Regression': LogisticRegression(random_state=0),
+    }
+    classifier_names = st.multiselect(
+        "Choose your Ensemble", list(classifier_table), ['Extremely Randomized Trees'], key='classifiers'
+    )
+    if not classifier_names:
+        st.error("Please select at least one classifier.")
+
+    classifier_ensemble = []
+    for estimator in classifier_names:
+        st.markdown('**{}**:'.format(estimator))
+        if estimator == 'Random Forest':
+            n_estimators_rf = st.slider('n_estimators', 30, 500, key='rf_n_estimators')
+            classifier_table[estimator].set_params(n_estimators=n_estimators_rf)
+        elif estimator == 'Extremely Randomized Trees':
+            n_estimators_et = st.slider('n_estimators', 30, 500, key='et_n_estimators')
+            classifier_table[estimator].set_params(n_estimators=n_estimators_et)
+        else:
+            st.write('No tunable hyperparameters yet...')
+        classifier_ensemble.append((estimator, classifier_table[estimator]))
+
+    est = VotingClassifier(
+        estimators=classifier_ensemble,
+        voting='soft'
+    )
+
+elif approach == 'Regression':
+    
+    regressor_table = {
+        'Random Forest': RandomForestRegressor(random_state=0),
+        'Extremely Randomized Trees': ExtraTreesRegressor(random_state=0),
+        'Support Vector Machine': SVR(),
+    }
+    regressor_names = st.multiselect(
+        "Choose your Ensemble", list(regressor_table), ['Extremely Randomized Trees'], key='regressors'
+    )
+    if not regressor_names:
+        st.error("Please select at least one regressor.")
+
+    regressor_ensemble = []
+    for estimator in regressor_names:
+        st.markdown('**{}**:'.format(estimator))
+        if estimator == 'Random Forest':
+            n_estimators_rf = st.slider('n_estimators', 30, 500, key='rf_n_estimators')
+            regressor_table[estimator].set_params(n_estimators=n_estimators_rf)
+        elif estimator == 'Extremely Randomized Trees':
+            n_estimators_et = st.slider('n_estimators', 30, 500, key='et_n_estimators')
+            regressor_table[estimator].set_params(n_estimators=n_estimators_et)
+        else:
+            st.write('No tunable hyperparameters yet...')
+        regressor_ensemble.append((estimator, regressor_table[estimator]))
+
+    est = VotingRegressor(
+        estimators=regressor_ensemble,
+    )
+
+steps.append(('estimator', est))
+
+
+if approach == 'Classification':
+    scoring_table = {
+        'Accuracy': 'accuracy',
+        'Area under ROC': 'roc_auc',
+        'Average precision': 'average_precision',
+        'F1': 'f1'
+    }
+else:
+    scoring_table = {
+        'R squared': 'r2',
+        'Mean Squared Error': 'neg_mean_squared_error',
+        'Mean Absolute Error': 'neg_mean_absolute_error',
+        'Mean Squared Logarithmic Error': 'neg_mean_squared_log_error',
+        'Explained Variance': 'explained_variance',
+    }
+
+
+scoring = st.multiselect(
+    'Choose the metrics to evaluate your model',
+    list(scoring_table),
+    ['Accuracy' if approach=='Classification' else 'R squared']
+)
+
+
+pipe = Pipeline(steps)
+
+@st.cache
+def get_cv_score(pipe, scoring):
+    cv_score = cross_validate(
+        pipe, 
+        X_vals, 
+        y_vals,
+        cv=4,
+        scoring=[scoring_table[metric] for metric in scoring]
+    )
+    return pd.DataFrame.from_dict(cv_score)
+
+
+if st.button('Run'):
+    cv_score = get_cv_score(pipe, scoring)
+    st.write( cv_score.mean() )
