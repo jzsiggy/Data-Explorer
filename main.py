@@ -198,3 +198,26 @@ if will_scale:
     scaler = StandardScaler()
     X_vals = pd.DataFrame(scaler.fit_transform(X_vals),columns = X_vals.columns)
 
+
+'''
+    ## Class **Imbalance**
+'''
+
+def show_imbalance():
+    y_vals_imbalance = data[target].values
+    fig = px.bar(
+                x=np.unique(y_vals_imbalance), 
+                y=[ np.sum(y_vals_imbalance==class_) / len(y_vals_imbalance) for class_ in np.unique(y_vals_imbalance) ],
+                labels={
+                        "x": 'class',
+                        "y": 'percentage of observations',
+                    },
+            )
+    fig.update_layout(title_text='Class imbalance')
+    st.write(fig)
+
+if approach == 'Classification':
+    show_imbalance()
+else:
+    st.write('This option is only available for classification problems.')
+
