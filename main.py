@@ -303,3 +303,55 @@ else:
 
 
 
+'''
+    ## Data **Trends** and **Seasonality**
+'''
+
+@st.cache(allow_output_mutation=True)
+def get_trends(period):
+    ts = go.Figure()
+    ts.add_trace( 
+        go.Scatter(x=date_ft, y=y_vals) 
+    )
+    ts.update_layout(
+        title_text='Time Series',
+        xaxis_title="Date",
+        yaxis_title=target,
+    )
+
+    decomposition = seasonal_decompose(y_vals, period=int(period))
+    trend = go.Figure()
+    trend.add_trace(
+        go.Scatter(x=date_ft, y=decomposition.trend)
+    )
+    trend.update_layout(
+        title_text='Trend',
+        xaxis_title="Date",
+        yaxis_title=target,
+    )
+
+    seasonality = go.Scatter(x=date_ft, y=decomposition.seasonal, name='Seasonality')
+    residual = go.Scatter(x=date_ft, y=decomposition.resid, name='Residual')
+
+    fig = go.Figure()
+    fig.add_trace(seasonality)
+    fig.add_trace(residual)
+    fig.update_layout(
+        title_text='Seasonality & Residuality',
+        xaxis_title="Date",
+        yaxis_title=target,
+    )
+    
+    return ts, trend, fig
+    
+
+if approach == 'Time Series Regression':
+    period = st.text_input('What is the seasonality period of your data?', 365)
+    ts, trend, seasonal = get_trends(period)
+    st.write(ts)
+    st.write(trend)
+    st.write(seasonal)
+else:
+    st.write('This is only available for time series regression tasks.')
+
+
