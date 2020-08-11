@@ -221,3 +221,31 @@ if approach == 'Classification':
 else:
     st.write('This option is only available for classification problems.')
 
+
+'''
+    ## Feature **Occurencies**
+'''
+
+def show_feat_occurencies():
+    features_1 = st.multiselect(
+        "Choose features", list(X_vals.columns), [], key='occurencies_bar_plot'
+    )
+    if not features_1:
+        st.error("Please select at least one feature.")    
+
+    for feat in features_1:
+        fig = px.bar(
+            x=np.unique(data[feat]), 
+            y=[ data.loc[data[feat] == val][target].count() for val in np.unique(data[feat]) ],
+            labels={
+                     "x": feat,
+                     "y": 'num observations',
+                 },
+        )
+        fig.update_layout(title_text='{} - Number of Observations'.format(feat))
+        st.write(fig)
+
+st.write('Be sure to select categorical features')
+
+show_feat_occurencies()
+
