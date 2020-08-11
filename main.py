@@ -249,3 +249,57 @@ st.write('Be sure to select categorical features')
 
 show_feat_occurencies()
 
+
+'''
+    ## Data **Distribuition**
+'''
+
+
+def show_classif_distributions():
+    features_1 = st.multiselect(
+        "Choose features", list(X_vals.columns), [], key='density_plot'
+    )
+    if not features_1:
+        st.error("Please select at least one feature.")    
+
+    for feat in features_1:
+        if to_encode_target:
+            group_labels = target_encoder.classes_
+        else:
+            group_labels = [activity for activity in np.unique(y_vals)]
+
+        fig = ff.create_distplot(
+            [ X_vals.iloc[y_vals == activity][feat] for activity in np.unique(y_vals)], 
+            group_labels = group_labels,
+            bin_size=0.5,
+            show_rug=False,
+        )
+        fig.update_layout(title_text='{} Distribution Density'.format(feat))
+        st.write(fig)
+
+def show_reg_distributions():
+    features_1 = st.multiselect(
+        "Choose features", list(X_vals.columns), [], key='density_plot'
+    )
+    if not features_1:
+        st.error("Please select at least one feature.")    
+
+    for feat in features_1:
+        fig = px.bar(
+            x=np.unique(data[feat]), 
+            y=[ data.loc[data[feat] == val][target].mean() for val in np.unique(data[feat]) ],
+            labels={
+                     "x": feat,
+                     "y": target,
+                 },
+        )
+        fig.update_layout(title_text='Mean {0} by {1}'.format(target, feat))
+        st.write(fig)
+
+if approach == 'Classification':
+  show_classif_distributions()
+else:
+  show_reg_distributions()
+
+
+
