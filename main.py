@@ -97,6 +97,22 @@ def display_dataframe_quickly(df, max_rows=50, **st_dataframe_kwargs):
 st.set_option('deprecation.showfileUploaderEncoding', False)
 file = st.file_uploader("Choose a CSV file", type="csv")
 
+datasets = {
+    'Iris Species Data': './data/iris.csv',
+    'São Paulo Housing Data': './data/housing.csv'
+}
+
+st.markdown("**Don't have any data at hand?** No problem - Feel free to choose a default dataset below!")
+default_dataset = st.multiselect(
+    'Choose a dataset.',
+    list(datasets),
+    []
+)
+
+if len(default_dataset) == 1:
+    file = datasets[ default_dataset[0] ]
+
+
 if file is None:
     st.error('Please select a CSV file')
     st.stop()
@@ -253,6 +269,8 @@ show_feat_occurencies()
 '''
     ## Data **Distribuition**
 '''
+
+st.markdown('If you are seeing unusual results, it may be due to outliers! Try trimming your data to the 90% quantile :)')
 
 
 def show_classif_distributions():
