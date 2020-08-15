@@ -1,4 +1,4 @@
 # Data-Explorer
 Interactive data exploration for many use cases - Built on Streamlit and SKL
 
-[dataxplorer.live](www.dataxplorer.live)
+[dataxplorer.live](http://www.dataxplorer.live)
